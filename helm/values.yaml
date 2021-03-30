@@ -1,0 +1,61 @@
+global:
+  enabled: true
+  tlsDisable: false
+
+injector:
+  enabled: true
+  image:
+    repository: "hashicorp/vault-k8s"
+    tag: "0.8.0"
+  resources:
+      requests:
+        memory: 256Mi
+        cpu: 250m
+      limits:
+        memory: 256Mi
+        cpu: 250m
+
+server:
+  image:
+    repository: "hashicorp/vault"
+    tag: "1.6.2"
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 4Gi
+      cpu: 2000m
+
+  extraEnvironmentVars:
+    VAULT_CACERT: /vault/userconfig/vault-server-tls/vault.ca
+
+  extraVolumes:
+    - type: secret
+      name: vault-server-tls
+
+  standalone:
+    enabled: true
+    config: |
+      ui = true
+
+      listener "tcp" {
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+        tls_cert_file = "/vault/userconfig/vault-server-tls/vault.crt"
+        tls_key_file  = "/vault/userconfig/vault-server-tls/vault.key"
+        tls_client_ca_file = "/vault/userconfig/vault-server-tls/vault.ca"
+      }
+
+      storage "s3" {
+        region = "us-west-2"
+        bucket = "name-of-your-bucket"
+      }
+
+      seal "awskms" {
+        region = "us-west-2"
+        kms_key_id = "id-of-your-kms-key"
+      }
+
+ui:
+  enabled: true
